@@ -3,102 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Full 12-Note Swara Translator</title>
+    <title>SwarMapper: Precision Slider</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; padding: 20px; background: #eceff1; }
-        .card { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 20px; background: #eceff1; }
+        .card { background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
         h2 { color: #263238; margin-top: 0; text-align: center; }
-        .controls { margin-bottom: 25px; }
-        label { font-weight: 600; display: block; margin-bottom: 5px; color: #546e7a; }
-        select { width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #cfd8dc; font-size: 1.1rem; appearance: none; background-color: #fff; }
-        .result-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #78909c; font-size: 0.9rem; text-transform: uppercase; }
-        td { padding: 12px; border-bottom: 1px solid #f5f5f5; font-size: 1.1rem; }
-        .swara-name { font-weight: bold; color: #d32f2f; }
-        .western-note { font-weight: bold; color: #1976d2; font-family: monospace; }
-        .note-type { font-size: 0.85rem; color: #90a4ae; font-style: italic; }
-        tr:hover { background-color: #fafafa; }
+        
+        .slider-section { margin: 30px 0; text-align: center; background: #f8f9fa; padding: 25px; border-radius: 12px; position: relative; }
+        .current-sa-label { font-size: 0.8rem; color: #78909c; text-transform: uppercase; font-weight: bold; }
+        .current-sa-note { font-size: 3rem; font-weight: 900; color: #d32f2f; margin: 5px 0 15px 0; }
+        
+        /* Slider Wrapper for alignment */
+        .range-container { position: relative; width: 100%; padding: 0 10px; box-sizing: border-box; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; margin: 0; }
+        input[type=range]::-webkit-slider-runnable-track { height: 8px; background: #cfd8dc; border-radius: 4px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #263238; margin-top: -8px; border: 2px solid #fff; position: relative; z-index: 2; }
+
+        /* Tick Labels */
+        .sliderticks { display: flex; justify-content: space-between; padding: 0 10px; margin-top: 10px; }
+        .sliderticks span { font-size: 0.7rem; color: #90a4ae; font-weight: bold; width: 20px; text-align: center; position: relative; }
+
+        .result-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #90a4ae; font-size: 0.8rem; }
+        td { padding: 12px; border-bottom: 1px solid #f1f1f1; }
+        
+        .swara-col { font-weight: 800; color: #263238; font-size: 1.1rem; }
+        .note-col { font-weight: 600; color: #1976d2; font-family: 'Monaco', monospace; font-size: 1.1rem; }
+        .desc-col { color: #b0bec5; font-size: 0.8rem; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Chromatone: Swara Mapper</h2>
+    <h2>SwarMapper</h2>
     
-    <div class="controls">
-        <label for="rootNote">Set your 'Sa' (Root):</label>
-        <select id="rootNote" onchange="translateAllNotes()">
-            <option value="C">C</option>
-            <option value="C#">C# / Db</option>
-            <option value="D">D</option>
-            <option value="D#">D# / Eb</option>
-            <option value="E">E</option>
-            <option value="F">F</option>
-            <option value="F#">F# / Gb</option>
-            <option value="G">G</option>
-            <option value="G#">G# / Ab</option>
-            <option value="A">A</option>
-            <option value="A#">A# / Bb</option>
-            <option value="B">B</option>
-        </select>
+    <div class="slider-section">
+        <div class="current-sa-label">Selected Root (Sa)</div>
+        <div id="saDisplay" class="current-sa-note">C</div>
+        
+        <div class="range-container">
+            <input type="range" id="scaleSlider" min="0" max="11" value="0" step="1" oninput="updateMapping()">
+            <div class="sliderticks" id="tickContainer">
+                <!-- Ticks added via JS -->
+            </div>
+        </div>
     </div>
 
     <table class="result-table">
         <thead>
             <tr>
-                <th>Indian Swara</th>
-                <th>Western Note</th>
-                <th>Type</th>
+                <th>SWARA</th>
+                <th>WESTERN NOTE</th>
+                <th>NAME</th>
             </tr>
         </thead>
-        <tbody id="outputBody">
-            <!-- Table rows will be generated here -->
-        </tbody>
+        <tbody id="mappingBody"></tbody>
     </table>
 </div>
 
 <script>
-    const chromaticScale = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const westernNotes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
-    // Detailed mapping of all 12 intervals
-    const swaraData = [
-        { name: "Sa", type: "Shadaj (Root)" },
-        { name: "re", type: "Komal Rishabh" },
-        { name: "Re", type: "Shuddh Rishabh" },
-        { name: "ga", type: "Komal Gandhar" },
-        { name: "Ga", type: "Shuddh Gandhar" },
-        { name: "ma", type: "Shuddh Madhyam" },
-        { name: "Ma", type: "Teevra Madhyam" },
-        { name: "Pa", type: "Pancham" },
-        { name: "dha", type: "Komal Dhaivat" },
-        { name: "Dha", type: "Shuddh Dhaivat" },
-        { name: "ni", type: "Komal Nishad" },
-        { name: "Ni", type: "Shuddh Nishad" }
+    const swaras = [
+        { s: "Sa", d: "Shadaj" },
+        { s: "re", d: "Komal Rishabh" },
+        { s: "Re", d: "Shuddh Rishabh" },
+        { s: "ga", d: "Komal Gandhar" },
+        { s: "Ga", d: "Shuddh Gandhar" },
+        { s: "ma", d: "Shuddh Madhyam" },
+        { s: "Ma", d: "Teevra Madhyam" },
+        { s: "Pa", d: "Pancham" },
+        { s: "dha", d: "Komal Dhaivat" },
+        { s: "Dha", d: "Shuddh Dhaivat" },
+        { s: "ni", d: "Komal Nishad" },
+        { s: "Ni", d: "Shuddh Nishad" }
     ];
 
-    function translateAllNotes() {
-        const root = document.getElementById('rootNote').value;
-        const tableBody = document.getElementById('outputBody');
-        tableBody.innerHTML = ""; 
+    // Generate tick labels dynamically
+    const tickContainer = document.getElementById('tickContainer');
+    westernNotes.forEach(note => {
+        const span = document.createElement('span');
+        span.innerText = note.replace("#", "♯"); // Prettier sharp symbol
+        tickContainer.appendChild(span);
+    });
 
-        let rootIndex = chromaticScale.indexOf(root);
+    function updateMapping() {
+        const sliderVal = parseInt(document.getElementById('scaleSlider').value);
+        const saDisplay = document.getElementById('saDisplay');
+        const body = document.getElementById('mappingBody');
+        
+        saDisplay.innerText = westernNotes[sliderVal];
+        body.innerHTML = "";
 
-        swaraData.forEach((swara, interval) => {
-            let noteIndex = (rootIndex + interval) % 12;
-            let westernNote = chromaticScale[noteIndex];
+        swaras.forEach((swara, index) => {
+            let westernIndex = (sliderVal + index) % 12;
+            let currentNote = westernNotes[westernIndex];
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td class="swara-name">${swara.name}</td>
-                <td class="western-note">${westernNote}</td>
-                <td class="note-type">${swara.type}</td>
+                <td class="swara-col">${swara.s}</td>
+                <td class="note-col">${currentNote}</td>
+                <td class="desc-col">${swara.d}</td>
             `;
-            tableBody.appendChild(row);
+            body.appendChild(row);
         });
     }
 
-    // Initialize the tool
-    translateAllNotes();
+    updateMapping();
 </script>
 
 </body>
